@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>My Wallet Information</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" type="text/css" href="style.css">
+
+  <script type="text/javascript" src="https://unpkg.com/bsv@1.5.3/bsv.min.js"></script>
+  <script type="text/javascript" src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+  <script src="https://widgets.coingecko.com/coingecko-coin-list-widget.js"></script>
+  <script src="https://widgets.coingecko.com/coingecko-coin-price-marquee-widget.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/bsv@1.5.3/bsv-mnemonic.min.js"></script>
+
+</head>
+<body>
+  <div id = "main" >
+    <div id = "avt">
+      <img src="img/avatar.png" alt="Avatar Image">
+      <h2>Anonymous</h2>
+    </div>
+    
+    <p id="balance">No account linked</p> 
+
+    <button id="generateKey">Generate New Key</button>
+
+
+    <div id="qr">
+      <div id="qr_block">
+        <div id="qrcode"></div>
+      </div>
+    </div>
+
+    <div id="info-box">
+      <div id="box">
+        <p id="title" >Public Key</p>
+        <p id="pubKey"></p>
+        <div id="line"></div>
+      </div>
+
+      <div id="box">
+        <p id="title" >Private Key</p>
+        <p id="privateKey"></p>
+        <div id="line"></div>
+      </div>
+
+      <div id="box">
+        <p id="title" >Mnemonic</p>
+        <p id="Mnemonic"></p>
+        <div id="line"></div>
+      </div>
+
+      <div id="box">
+        <p id="title" >Address</p>
+        <p id="address"></p>
+        <div id="line"></div>
+      </div>
+    </div>
+
+    <coingecko-coin-list-widget  coin-ids="bitcoin" currency="usd" locale="en" width="320"></coingecko-coin-list-widget>
+  
+  </div>
+
+  <script>
+    document.getElementById('generateKey').addEventListener('click', function() {
+
+        var Mnemonic = window.bsvMnemonic;
+        var words = Mnemonic.fromRandom();
+
+        var p = document.querySelector("#Mnemonic");
+        p.innerHTML = words.toString();
+
+        var hdPrivateKey = bsv.HDPrivateKey.fromSeed(words.toSeed())
+        var privateKey = hdPrivateKey.deriveChild("m/44'/0'/0'").privateKey;
+        var pubKey = bsv.PublicKey.fromPrivateKey(privateKey);
+        var address = bsv.Address.fromPublicKey(pubKey, 'livenet');
+    
+        var pubKeyDisplay = document.querySelector("#pubKey");
+        pubKeyDisplay.innerHTML = pubKey.toString();
+
+        var privKeyDisplay = document.querySelector("#privateKey");
+        privKeyDisplay.innerHTML = privateKey.toString();
+    
+        var addressDisplay = document.querySelector("#address");
+        addressDisplay.innerHTML = address.toString();
+    
+        // Generate QR code for the address
+        var qrCodeContainer = document.getElementById("qrcode");
+        qrCodeContainer.innerHTML = '';
+        new QRCode(qrCodeContainer, {
+          text: address.toString(),
+          width: 256,
+          height: 256,
+          colorDark : "#000000",
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.H
+        });
+    
+        // Fetch and display balance
+        fetch(`https://blockchain.info/balance?active=${address}&cors=true`)
+          .then(response => response.json())
+          .then(data => {
+            var balance = data[address.toString()].final_balance / 100000000; // Convert Satoshi to Bitcoin
+            var balanceDisplay = document.getElementById('balance');
+            balanceDisplay.textContent = 'Balance: ' + balance + ' BTC';
+          })
+          .catch(err => console.error('Error fetching balance:', err));
+    });
+    </script>
+    
+    
+
+</body>
+
+</html>
